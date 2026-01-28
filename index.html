@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Califonix Production System V4</title>
+    <style>
+        :root { --bg: #0c0c0c; --mac: #00ff00; --accent: #3498db; }
+        body { font-family: 'Segoe UI', Arial; background: var(--bg); color: white; text-align: center; margin: 0; overflow: hidden; transition: 0.3s; }
+        .logo { height: 80px; margin-top: 20px; }
+        #view { height: calc(100vh - 120px); display: flex; flex-direction: column; justify-content: center; align-items: center; }
+
+        /* COLORS & ANIMATIONS */
+        .theme-pass { background: #1b5e20 !important; animation: blink-green 0.8s infinite; }
+        @keyframes blink-green { 50% { background: #2ecc71; } }
+        .theme-low { background: #e67e22 !important; }  /* Orange */
+        .theme-high { background: #b71c1c !important; } /* Red */
+        
+        .status-text { font-size: 150px; font-weight: 900; margin: 0; text-shadow: 4px 4px 10px rgba(0,0,0,0.5); }
+        .mA-display { font-size: 110px; color: var(--accent); margin: 5px 0; font-weight: bold; }
+        .mac-display { font-size: 40px; color: var(--mac); font-family: monospace; background: rgba(0,0,0,0.5); padding: 10px 50px; border-radius: 15px; border: 1px solid #444; }
+        
+        .limit-bar { font-size: 24px; color: #ffca28; background: rgba(255,202,40,0.1); padding: 5px 40px; border-radius: 50px; margin-bottom: 10px; border: 1px solid #ffca28; }
+        .stats { position: fixed; bottom: 20px; left: 20px; text-align: left; background: rgba(0,0,0,0.9); padding: 20px; border-radius: 12px; font-size: 22px; border: 1px solid #444; min-width: 280px; }
+        .admin-btn { position: fixed; top: 10px; right: 10px; opacity: 0.3; cursor: pointer; }
+        #adminPanel { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#222; padding:30px; border:3px solid #fff; border-radius:15px; width: 450px; z-index: 1000; text-align: left; }
+        input { width: 95%; padding: 10px; margin-bottom: 10px; background: #333; color: white; border: 1px solid #555; }
+    </style>
+</head>
+<body id="ui-body">
+
+    <img src="https://i.postimg.cc/5y7SN4xc/logo.png" class="logo">
+
+    <div id="view">
+        <button id="btnConnect" style="padding:20px 40px; background:orange; font-size:25px; border-radius:10px; cursor:pointer;" onclick="initHardware()">CONNECT HARDWARE</button>
+        
+        <h2 id="dispHeader" style="margin-bottom: 5px; font-size: 35px;">MODEL: --</h2>
+        <div class="limit-bar">STANDARD: <span id="dispMin">0</span> - <span id="dispMax">0</span> mA</div>
+
+        <div id="dispMac" class="mac-display">MAC: --:--:--:--:--:--</div>
+        <div id="dispCurrent" class="mA-display">0.0 mA</div>
+        <div id="dispStatus" class="status-text">READY</div>
+    </div>
+
+    <div class="stats">
+        <b>PRODUCTION LOGS</b><hr>
+        TOTAL: <span id="s-total" style="float:right;">0</span><br>
+        PASS: <span id="s-pass" style="color:#2ecc71; float:right;">0</span><br>
+        LOW: <span id="s-low" style="color:#f39c12; float:right;">0</span><br>
+        HIGH: <span id="s-high" style="color:#ff4d4d; float:right;">0</span>
+    </div>
+
+    <button class="admin-btn" onclick="openAdmin()">⚙️</button>
+
+    <div id="adminPanel">
+        <h3>System Configuration</h3>
+        <label>Model Name:</label><input id="in-model">
+        <label>Min mA:</label><input id="in-min" type="number">
+        <label>Max mA:</label><input id="in-max" type="number">
+        <label>Current Offset (Zeroing):</label><input id="in-offset" type="number">
+        <label>Google Script URL:</label><input id="in-url">
+        <button onclick="saveAdmin()" style="width:100%; padding:15px; background:green; color:white; font-weight:bold;">SAVE & APPLY</button>
+    </div>
+
+    <script>
+        let espPort, bbPort, locked = false, testing = false;
+        let cfg = { model: "Boat 161", min: 30, max: 80, offset: 19.5, url: "" };
+        let counts = { total: 0, pass: 0, low: 0, high: 0 };
+        let liveMA = 0, liveMAC = "--:--:--:--:--:--";
+
+        window.onload = () => {
+            let saved = localStorage.getItem('califonix_prod_v14');
+            if(saved) { cfg = JSON.parse(saved); updateUIHeader(); }
+        };
+
+        async function initHardware() {
+            try {
+                espPort = await navigator.serial.requestPort(); await espPort.open({ baudRate: 115200 });
+                bbPort = await navigator.serial.requestPort(); await bbPort.open({ baudRate: 460800 });
+                document.getElementById('btnConnect').style.display = "none";
+                readESP(); readBB();
+            } catch (e) { alert("Ports Failed!"); }
+        }
+
+        async function readESP() {
+            const decoder = new TextDecoder();
+            while (espPort.readable) {
+                const reader = espPort.readable.getReader();
+                try {
+                    while (true) {
+                        const { value, done } = await reader.read();
+                        if (done) break;
+                        let text = decoder.decode(value);
+                        if (text.includes("C|")) {
+                            liveMA = parseFloat(text.split("|")[1]) - cfg.offset;
+                            if (liveMA < 1) liveMA = 0;
+                            if (!locked) {
+                                document.getElementById('dispCurrent').innerText = liveMA.toFixed(1) + " mA";
+                                if (liveMA > 10.0 && !testing) startTest();
+                            }
+                        }
+                    }
+                } finally { reader.releaseLock(); }
+            }
+        }
+
+        async function readBB() {
+            const reader = bbPort.readable.getReader();
+            let buffer = [];
+            while (true) {
+                const { value, done } = await reader.read();
+                value.forEach(b => buffer.push(b));
+                while (buffer.length >= 8) {
+                    let idx = buffer.indexOf(0x06);
+                    if (idx !== -1 && buffer[idx+1] === 0x01 && buffer.length >= idx + 8) {
+                        liveMAC = buffer.slice(idx+2, idx+8).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(":");
+                        document.getElementById('dispMac').innerText = "MAC: " + liveMAC;
+                        buffer.splice(0, idx + 8);
+                    } else if (idx === -1) { buffer = []; break; }
+                    else { buffer.shift(); }
+                }
+            }
+        }
+
+        function startTest() {
+            testing = true;
+            document.getElementById('dispStatus').innerText = "TESTING...";
+            
+            // 3 SECOND TIMER
+            setTimeout(() => {
+                locked = true;
+                let finalMA = liveMA;
+                let finalMAC = liveMAC;
+                let res = "PASS", theme = "theme-pass";
+
+                if (finalMA < cfg.min) { res = "LOW CURRENT"; theme = "theme-low"; counts.low++; }
+                else if (finalMA > cfg.max) { res = "HIGH CURRENT"; theme = "theme-high"; counts.high++; }
+                else { counts.pass++; }
+
+                counts.total++;
+                document.getElementById('dispCurrent').innerText = finalMA.toFixed(1) + " mA";
+                document.getElementById('dispStatus').innerText = res;
+                document.getElementById('ui-body').className = theme;
+                
+                updateStatsUI();
+                logToSheet(finalMAC, finalMA.toFixed(1), res);
+
+                // Reset wait
+                let check = setInterval(() => {
+                    if (liveMA < 5.0) { clearInterval(check); resetUI(); }
+                }, 1000);
+            }, 3000);
+        }
+
+        function resetUI() {
+            testing = false; locked = false; liveMAC = "--:--:--:--:--:--";
+            document.getElementById('ui-body').className = "";
+            document.getElementById('dispStatus').innerText = "READY";
+            document.getElementById('dispCurrent').innerText = "0.0 mA";
+            document.getElementById('dispMac').innerText = "MAC: --:--:--:--:--:--";
+        }
+
+        function logToSheet(mac, cur, st) {
+            if(!cfg.url) return;
+            const url = `${cfg.url}?model=${encodeURIComponent(cfg.model)}&mac=${mac}&current=${cur}&status=${encodeURIComponent(st)}`;
+            fetch(url, { mode: 'no-cors' });
+        }
+
+        function updateStatsUI() {
+            document.getElementById('s-total').innerText = counts.total;
+            document.getElementById('s-pass').innerText = counts.pass;
+            document.getElementById('s-low').innerText = counts.low;
+            document.getElementById('s-high').innerText = counts.high;
+        }
+
+        function openAdmin() { if(prompt("Password:") === "admin123") document.getElementById('adminPanel').style.display="block"; }
+        function saveAdmin() {
+            cfg.model = document.getElementById('in-model').value;
+            cfg.min = parseFloat(document.getElementById('in-min').value);
+            cfg.max = parseFloat(document.getElementById('in-max').value);
+            cfg.offset = parseFloat(document.getElementById('in-offset').value);
+            cfg.url = document.getElementById('in-url').value;
+            localStorage.setItem('califonix_prod_v14', JSON.stringify(cfg));
+            document.getElementById('adminPanel').style.display="none";
+            updateUIHeader();
+        }
+        function updateUIHeader() {
+            document.getElementById('dispHeader').innerText = `MODEL: ${cfg.model}`;
+            document.getElementById('dispMin').innerText = cfg.min;
+            document.getElementById('dispMax').innerText = cfg.max;
+        }
+    </script>
+</body>
+</html>
