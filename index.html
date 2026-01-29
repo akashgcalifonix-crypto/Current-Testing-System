@@ -2,83 +2,122 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Califonix Production System V4</title>
+    <title>Califonix Current Testing System </title>
     <style>
-        :root { --bg: #0c0c0c; --mac: #00ff00; --accent: #3498db; }
-        body { font-family: 'Segoe UI', Arial; background: var(--bg); color: white; text-align: center; margin: 0; overflow: hidden; transition: 0.3s; }
-        .logo { height: 80px; margin-top: 20px; }
-        #view { height: calc(100vh - 120px); display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        :root { --bg: #0c0c0c; --pass: #1b5e20; --fail: #b71c1c; --mac: #00ff00; --accent: #3498db; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #000; color: white; text-align: center; margin: 0; overflow: hidden; transition: 0.2s; }
+        
+        /* Top Navigation Bar */
+        .header-bar { display: flex; justify-content: space-between; align-items: flex-start; padding: 15px 30px; background: #000; border-bottom: 1px solid #222; position: relative; }
+        .logo { height: 60px; }
 
-        /* COLORS & ANIMATIONS */
-        .theme-pass { background: #1b5e20 !important; animation: blink-green 0.8s infinite; }
-        @keyframes blink-green { 50% { background: #2ecc71; } }
-        .theme-low { background: #e67e22 !important; }  /* Orange */
-        .theme-high { background: #b71c1c !important; } /* Red */
+        /* CENTERED INFO BOX (No Overlap) */
+        .info-center { position: absolute; left: 50%; transform: translateX(-50%); top: 15px; text-align: center; width: 500px; }
+        .model-text { font-size: 32px; font-weight: 900; color: #fff; text-transform: uppercase; margin: 0; letter-spacing: 2px; }
+        .limit-bar { font-size: 20px; color: #ffca28; background: rgba(255,202,40,0.1); padding: 5px 30px; border-radius: 50px; margin-top: 8px; border: 1px solid #ffca28; display: inline-block; }
+
+        /* THEMES */
+        .theme-pass { background: var(--pass) !important; animation: blink 0.8s infinite; }
+        @keyframes blink { 50% { opacity: 0.7; } }
+        .theme-low { background: #e67e22 !important; } 
+        .theme-high { background: var(--fail) !important; } 
+
+        #view { height: calc(100vh - 150px); display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .status-text { font-size: 140px; font-weight: 900; margin: 0; text-transform: uppercase; }
+        .mac-display { font-size: 55px; color: var(--mac); font-family: monospace; background: #000; padding: 10px 50px; border-radius: 12px; border: 1px solid #333; margin: 15px 0; }
+        .mA-display { font-size: 120px; color: var(--accent); font-weight: bold; margin: 0; }
         
-        .status-text { font-size: 150px; font-weight: 900; margin: 0; text-shadow: 4px 4px 10px rgba(0,0,0,0.5); }
-        .mA-display { font-size: 110px; color: var(--accent); margin: 5px 0; font-weight: bold; }
-        .mac-display { font-size: 40px; color: var(--mac); font-family: monospace; background: rgba(0,0,0,0.5); padding: 10px 50px; border-radius: 15px; border: 1px solid #444; }
-        
-        .limit-bar { font-size: 24px; color: #ffca28; background: rgba(255,202,40,0.1); padding: 5px 40px; border-radius: 50px; margin-bottom: 10px; border: 1px solid #ffca28; }
-        .stats { position: fixed; bottom: 20px; left: 20px; text-align: left; background: rgba(0,0,0,0.9); padding: 20px; border-radius: 12px; font-size: 22px; border: 1px solid #444; min-width: 280px; }
-        .admin-btn { position: fixed; top: 10px; right: 10px; opacity: 0.3; cursor: pointer; }
-        #adminPanel { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#222; padding:30px; border:3px solid #fff; border-radius:15px; width: 450px; z-index: 1000; text-align: left; }
-        input { width: 95%; padding: 10px; margin-bottom: 10px; background: #333; color: white; border: 1px solid #555; }
+        .stats { position: fixed; bottom: 20px; left: 20px; text-align: left; background: rgba(0,0,0,0.9); padding: 20px; border-radius: 12px; font-size: 22px; border: 1px solid #333; min-width: 250px; }
+
+        /* ADMIN BUTTONS */
+        .admin-controls { display: flex; gap: 10px; }
+        .adm-btn { padding: 8px 12px; background: #222; border: 1px solid #444; color: #888; cursor: pointer; border-radius: 5px; font-size: 13px; font-weight: bold; }
+        .adm-btn:hover { background: #333; color: white; }
+
+        /* OVERLAYS & MODALS */
+        #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px; }
+        .setup-btn { padding: 20px 40px; font-size: 22px; font-weight: bold; cursor: pointer; border: none; border-radius: 10px; width: 450px; color: white;}
+        .modal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#222; padding:30px; border:3px solid #fff; border-radius:15px; width: 420px; z-index: 6000; text-align: left; }
+        input { width: 95%; padding: 12px; margin-bottom: 10px; background: #333; color: white; border: 1px solid #555; border-radius: 5px; }
+        #log-status { position: fixed; bottom: 20px; right: 20px; font-size: 14px; color: #2ecc71; font-weight: bold; }
     </style>
 </head>
 <body id="ui-body">
 
-    <img src="https://i.postimg.cc/5y7SN4xc/logo.png" class="logo">
+    <div class="header-bar">
+        <img src="https://i.postimg.cc/5y7SN4xc/logo.png" class="logo">
+        
+        <!-- Moved Model & Limits to center to avoid Admin overlap -->
+        <div class="info-center">
+            <div id="dispModel" class="model-text">MODEL: --</div>
+            <div class="limit-bar">STANDARD: <span id="dispMin">--</span> to <span id="dispMax">--</span> mA</div>
+        </div>
+
+        <div class="admin-controls">
+            <button class="adm-btn" onclick="openAdmin('storage')">📂 STORAGE</button>
+            <button class="adm-btn" onclick="openAdmin('config')">⚙️ CONFIG</button>
+        </div>
+    </div>
+
+    <!-- STARTUP SCREEN -->
+    <div id="overlay">
+        <h1 style="color:#fff; margin-bottom:20px;">CALIFONIX PRODUCTION STATION</h1>
+        <button id="btnESP" class="setup-btn" style="background:#e67e22;" onclick="connectESP()">1. CONNECT CURRENT SENSOR (ESP32)</button>
+        <button id="btnBB" class="setup-btn" style="background:cyan; color: black; display:none;" onclick="connectBB()">2. CONNECT MAC BOX (BLUE BOX)</button>
+        <button id="btnPath" class="setup-btn" style="background:#2ecc71; display:none;" onclick="setupFolder()">3. SELECT LOGS FOLDER (MANAGER)</button>
+    </div>
 
     <div id="view">
-        <button id="btnConnect" style="padding:20px 40px; background:orange; font-size:25px; border-radius:10px; cursor:pointer;" onclick="initHardware()">CONNECT HARDWARE</button>
-        
-        <h2 id="dispHeader" style="margin-bottom: 5px; font-size: 35px;">MODEL: --</h2>
-        <div class="limit-bar">STANDARD: <span id="dispMin">0</span> - <span id="dispMax">0</span> mA</div>
-
-        <div id="dispMac" class="mac-display">MAC: --:--:--:--:--:--</div>
-        <div id="dispCurrent" class="mA-display">0.0 mA</div>
-        <div id="dispStatus" class="status-text">READY</div>
+        <div id="status" class="status-text">READY</div>
+        <div id="mac" class="mac-display">--:--:--:--:--:--</div>
+        <div id="current" class="mA-display">0.0 mA</div>
     </div>
 
     <div class="stats">
-        <b>PRODUCTION LOGS</b><hr>
+        <b>SHIFT PERFORMANCE</b><hr>
         TOTAL: <span id="s-total" style="float:right;">0</span><br>
         PASS: <span id="s-pass" style="color:#2ecc71; float:right;">0</span><br>
-        LOW: <span id="s-low" style="color:#f39c12; float:right;">0</span><br>
-        HIGH: <span id="s-high" style="color:#ff4d4d; float:right;">0</span>
+        FAIL: <span id="s-fail" style="color:#ff4d4d; float:right;">0</span>
     </div>
 
-    <button class="admin-btn" onclick="openAdmin()">⚙️</button>
+    <div id="log-status"></div>
 
-    <div id="adminPanel">
-        <h3>System Configuration</h3>
+    <!-- CONFIG PANEL -->
+    <div id="panelConfig" class="modal">
+        <h2 style="color: var(--accent); margin-top:0;">Configuration</h2>
         <label>Model Name:</label><input id="in-model">
-        <label>Min mA:</label><input id="in-min" type="number">
-        <label>Max mA:</label><input id="in-max" type="number">
-        <label>Current Offset (Zeroing):</label><input id="in-offset" type="number">
-        <label>Google Script URL:</label><input id="in-url">
-        <button onclick="saveAdmin()" style="width:100%; padding:15px; background:green; color:white; font-weight:bold;">SAVE & APPLY</button>
+        <label>Min mA Limit:</label><input id="in-min" type="number">
+        <label>Max mA Limit:</label><input id="in-max" type="number">
+        <label>Current Offset:</label><input id="in-offset" type="number">
+        <button onclick="saveAdmin()" style="width:100%; padding:15px; background:green; color:white; font-weight:bold; border:none; cursor:pointer;">SAVE & APPLY</button>
+        <button onclick="closeModals()" style="width:100%; padding:10px; margin-top:10px; background:#444; color:#fff; border:none; cursor:pointer;">Cancel</button>
     </div>
 
     <script>
-        let espPort, bbPort, locked = false, testing = false;
-        let cfg = { model: "Boat 161", min: 30, max: 80, offset: 19.5, url: "" };
-        let counts = { total: 0, pass: 0, low: 0, high: 0 };
-        let liveMA = 0, liveMAC = "--:--:--:--:--:--";
+        let espPort, bbPort, dirHandle, locked = false, testing = false;
+        let cfg = { model: "Boat 161", min: 30, max: 80, offset: 128.0 };
+        let counts = { total: 0, pass: 0, fail: 0 }, liveMA = 0, liveMAC = "--:--:--:--:--:--";
 
         window.onload = () => {
-            let saved = localStorage.getItem('califonix_prod_v14');
+            let saved = localStorage.getItem('cali_prod_final_v26');
             if(saved) { cfg = JSON.parse(saved); updateUIHeader(); }
         };
 
-        async function initHardware() {
-            try {
-                espPort = await navigator.serial.requestPort(); await espPort.open({ baudRate: 115200 });
-                bbPort = await navigator.serial.requestPort(); await bbPort.open({ baudRate: 460800 });
-                document.getElementById('btnConnect').style.display = "none";
-                readESP(); readBB();
-            } catch (e) { alert("Ports Failed!"); }
+        async function connectESP() {
+            try { espPort = await navigator.serial.requestPort(); await espPort.open({ baudRate: 115200 }); document.getElementById('btnBB').style.display = "block"; } catch (e) {}
+        }
+        async function connectBB() {
+            try { bbPort = await navigator.serial.requestPort(); await bbPort.open({ baudRate: 460800 }); document.getElementById('btnPath').style.display = "block"; } catch (e) {}
+        }
+        async function setupFolder() {
+            if(prompt("Manager Password:") === "admin789") {
+                try {
+                    dirHandle = await window.showDirectoryPicker();
+                    document.getElementById('overlay').style.display = "none";
+                    document.getElementById('log-status').innerText = "LOGGING ACTIVE: " + dirHandle.name;
+                    readESP(); readBB();
+                } catch (e) { alert("Folder access failed!"); }
+            }
         }
 
         async function readESP() {
@@ -93,9 +132,10 @@
                         if (text.includes("C|")) {
                             liveMA = parseFloat(text.split("|")[1]) - cfg.offset;
                             if (liveMA < 1) liveMA = 0;
+                            if (liveMA < 5.0 && (locked || testing)) resetUI();
                             if (!locked) {
-                                document.getElementById('dispCurrent').innerText = liveMA.toFixed(1) + " mA";
-                                if (liveMA > 10.0 && !testing) startTest();
+                                document.getElementById('current').innerText = liveMA.toFixed(1) + " mA";
+                                if (liveMA > 10.0 && !testing && liveMAC !== "--:--:--:--:--:--") startTest();
                             }
                         }
                     }
@@ -104,16 +144,16 @@
         }
 
         async function readBB() {
-            const reader = bbPort.readable.getReader();
-            let buffer = [];
+            const reader = bbPort.readable.getReader(); let buffer = [];
             while (true) {
                 const { value, done } = await reader.read();
+                if (done) break;
                 value.forEach(b => buffer.push(b));
                 while (buffer.length >= 8) {
                     let idx = buffer.indexOf(0x06);
                     if (idx !== -1 && buffer[idx+1] === 0x01 && buffer.length >= idx + 8) {
                         liveMAC = buffer.slice(idx+2, idx+8).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(":");
-                        document.getElementById('dispMac').innerText = "MAC: " + liveMAC;
+                        if(!locked) document.getElementById('mac').innerText = liveMAC;
                         buffer.splice(0, idx + 8);
                     } else if (idx === -1) { buffer = []; break; }
                     else { buffer.shift(); }
@@ -123,68 +163,74 @@
 
         function startTest() {
             testing = true;
-            document.getElementById('dispStatus').innerText = "TESTING...";
-            
-            // 3 SECOND TIMER
-            setTimeout(() => {
+            document.getElementById('status').innerText = "TESTING...";
+            setTimeout(async () => {
+                if(liveMA < 10.0) { testing = false; return; }
                 locked = true;
-                let finalMA = liveMA;
-                let finalMAC = liveMAC;
-                let res = "PASS", theme = "theme-pass";
-
-                if (finalMA < cfg.min) { res = "LOW CURRENT"; theme = "theme-low"; counts.low++; }
-                else if (finalMA > cfg.max) { res = "HIGH CURRENT"; theme = "theme-high"; counts.high++; }
-                else { counts.pass++; }
-
-                counts.total++;
-                document.getElementById('dispCurrent').innerText = finalMA.toFixed(1) + " mA";
-                document.getElementById('dispStatus').innerText = res;
+                let finalVal = liveMA; let finalMac = liveMAC;
+                let status = (finalVal < cfg.min) ? "LOW mA" : (finalVal > cfg.max ? "HIGH mA" : "PASS");
+                let theme = (status === "PASS") ? "theme-pass" : (status === "LOW mA" ? "theme-low" : "theme-high");
+                
+                document.getElementById('status').innerText = status;
                 document.getElementById('ui-body').className = theme;
                 
+                counts.total++; if(status === "PASS") counts.pass++; else counts.fail++;
                 updateStatsUI();
-                logToSheet(finalMAC, finalMA.toFixed(1), res);
+                await saveToLogFile(cfg.model, finalMac, finalVal.toFixed(1), status);
+            }, 1200); 
+        }
 
-                // Reset wait
-                let check = setInterval(() => {
-                    if (liveMA < 5.0) { clearInterval(check); resetUI(); }
-                }, 1000);
-            }, 3000);
+        async function saveToLogFile(mod, mac, cur, st) {
+            if (!dirHandle) return;
+            const fileName = `Log_${new Date().toISOString().split('T')[0]}.csv`;
+            const fileH = await dirHandle.getFileHandle(fileName, { create: true });
+            const file = await fileH.getFile();
+            let header = (file.size === 0) ? "Date,Time,Model,MAC,Current_mA,Status\n" : "";
+            const writable = await fileH.createWritable({keepExistingData: true});
+            const now = new Date();
+            const row = `${header}${now.toLocaleDateString()},${now.toLocaleTimeString()},${mod},${mac},${cur},${st}\n`;
+            await writable.write({ type: 'write', position: file.size, data: row });
+            await writable.close();
         }
 
         function resetUI() {
             testing = false; locked = false; liveMAC = "--:--:--:--:--:--";
             document.getElementById('ui-body').className = "";
-            document.getElementById('dispStatus').innerText = "READY";
-            document.getElementById('dispCurrent').innerText = "0.0 mA";
-            document.getElementById('dispMac').innerText = "MAC: --:--:--:--:--:--";
-        }
-
-        function logToSheet(mac, cur, st) {
-            if(!cfg.url) return;
-            const url = `${cfg.url}?model=${encodeURIComponent(cfg.model)}&mac=${mac}&current=${cur}&status=${encodeURIComponent(st)}`;
-            fetch(url, { mode: 'no-cors' });
+            document.getElementById('status').innerText = "READY";
+            document.getElementById('current').innerText = "0.0 mA";
         }
 
         function updateStatsUI() {
             document.getElementById('s-total').innerText = counts.total;
             document.getElementById('s-pass').innerText = counts.pass;
-            document.getElementById('s-low').innerText = counts.low;
-            document.getElementById('s-high').innerText = counts.high;
+            document.getElementById('s-fail').innerText = counts.fail;
         }
 
-        function openAdmin() { if(prompt("Password:") === "admin123") document.getElementById('adminPanel').style.display="block"; }
+        function openAdmin(type) {
+            let pass = prompt("Admin Password:");
+            if (type === 'config' && pass === "admin123") {
+                document.getElementById('in-model').value = cfg.model;
+                document.getElementById('in-min').value = cfg.min;
+                document.getElementById('in-max').value = cfg.max;
+                document.getElementById('in-offset').value = cfg.offset;
+                document.getElementById('panelConfig').style.display = "block";
+            } else if (type === 'storage' && pass === "admin789") {
+                location.reload(); 
+            }
+        }
+
         function saveAdmin() {
             cfg.model = document.getElementById('in-model').value;
             cfg.min = parseFloat(document.getElementById('in-min').value);
             cfg.max = parseFloat(document.getElementById('in-max').value);
             cfg.offset = parseFloat(document.getElementById('in-offset').value);
-            cfg.url = document.getElementById('in-url').value;
-            localStorage.setItem('califonix_prod_v14', JSON.stringify(cfg));
-            document.getElementById('adminPanel').style.display="none";
-            updateUIHeader();
+            localStorage.setItem('cali_prod_final_v26', JSON.stringify(cfg));
+            closeModals(); updateUIHeader();
         }
+
+        function closeModals() { document.getElementById('panelConfig').style.display = "none"; }
         function updateUIHeader() {
-            document.getElementById('dispHeader').innerText = `MODEL: ${cfg.model}`;
+            document.getElementById('dispModel').innerText = "MODEL: " + cfg.model;
             document.getElementById('dispMin').innerText = cfg.min;
             document.getElementById('dispMax').innerText = cfg.max;
         }
