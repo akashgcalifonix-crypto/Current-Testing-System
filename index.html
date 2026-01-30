@@ -2,69 +2,48 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Califonix Current Testing System </title>
+    <title>Califonix | Industrial Data Hub</title>
     <style>
         :root { --bg: #0c0c0c; --pass: #1b5e20; --fail: #b71c1c; --mac: #00ff00; --accent: #3498db; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #000; color: white; text-align: center; margin: 0; overflow: hidden; transition: 0.2s; }
-        
-        /* Top Navigation Bar */
-        .header-bar { display: flex; justify-content: space-between; align-items: flex-start; padding: 15px 30px; background: #000; border-bottom: 1px solid #222; position: relative; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #000; color: white; text-align: center; margin: 0; overflow: hidden; }
+        .header-bar { display: flex; justify-content: space-between; padding: 15px 40px; background: #000; border-bottom: 2px solid #222; }
         .logo { height: 60px; }
-
-        /* CENTERED INFO BOX (No Overlap) */
-        .info-center { position: absolute; left: 50%; transform: translateX(-50%); top: 15px; text-align: center; width: 500px; }
-        .model-text { font-size: 32px; font-weight: 900; color: #fff; text-transform: uppercase; margin: 0; letter-spacing: 2px; }
-        .limit-bar { font-size: 20px; color: #ffca28; background: rgba(255,202,40,0.1); padding: 5px 30px; border-radius: 50px; margin-top: 8px; border: 1px solid #ffca28; display: inline-block; }
-
-        /* THEMES */
+        .info-center { position: absolute; left: 50%; transform: translateX(-50%); top: 15px; text-align: center; width: 600px; }
+        .model-text { font-size: 35px; font-weight: 900; color: #fff; text-transform: uppercase; margin: 0; }
+        .limit-bar { font-size: 22px; color: #ffca28; background: rgba(255,202,40,0.1); padding: 5px 30px; border-radius: 50px; margin-top: 5px; border: 1px solid #ffca28; display: inline-block; }
         .theme-pass { background: var(--pass) !important; animation: blink 0.8s infinite; }
         @keyframes blink { 50% { opacity: 0.7; } }
-        .theme-low { background: #e67e22 !important; } 
-        .theme-high { background: var(--fail) !important; } 
-
+        .theme-low { background: #e67e22 !important; } .theme-high { background: var(--fail) !important; } 
         #view { height: calc(100vh - 150px); display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .status-text { font-size: 140px; font-weight: 900; margin: 0; text-transform: uppercase; }
         .mac-display { font-size: 55px; color: var(--mac); font-family: monospace; background: #000; padding: 10px 50px; border-radius: 12px; border: 1px solid #333; margin: 15px 0; }
-        .mA-display { font-size: 120px; color: var(--accent); font-weight: bold; margin: 0; }
-        
+        .mA-display { font-size: 130px; color: var(--accent); font-weight: bold; margin: 0; }
         .stats { position: fixed; bottom: 20px; left: 20px; text-align: left; background: rgba(0,0,0,0.9); padding: 20px; border-radius: 12px; font-size: 22px; border: 1px solid #333; min-width: 250px; }
-
-        /* ADMIN BUTTONS */
-        .admin-controls { display: flex; gap: 10px; }
-        .adm-btn { padding: 8px 12px; background: #222; border: 1px solid #444; color: #888; cursor: pointer; border-radius: 5px; font-size: 13px; font-weight: bold; }
-        .adm-btn:hover { background: #333; color: white; }
-
-        /* OVERLAYS & MODALS */
+        .console { position: fixed; bottom: 20px; right: 20px; width: 350px; height: 120px; background: #111; font-family: monospace; font-size: 12px; color: #666; text-align: left; padding: 10px; overflow-y: auto; border: 1px solid #222; border-radius: 5px; }
         #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 5000; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px; }
         .setup-btn { padding: 20px 40px; font-size: 22px; font-weight: bold; cursor: pointer; border: none; border-radius: 10px; width: 450px; color: white;}
         .modal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#222; padding:30px; border:3px solid #fff; border-radius:15px; width: 420px; z-index: 6000; text-align: left; }
-        input { width: 95%; padding: 12px; margin-bottom: 10px; background: #333; color: white; border: 1px solid #555; border-radius: 5px; }
-        #log-status { position: fixed; bottom: 20px; right: 20px; font-size: 14px; color: #2ecc71; font-weight: bold; }
     </style>
 </head>
 <body id="ui-body">
 
     <div class="header-bar">
         <img src="https://i.postimg.cc/5y7SN4xc/logo.png" class="logo">
-        
-        <!-- Moved Model & Limits to center to avoid Admin overlap -->
         <div class="info-center">
             <div id="dispModel" class="model-text">MODEL: --</div>
-            <div class="limit-bar">STANDARD: <span id="dispMin">--</span> to <span id="dispMax">--</span> mA</div>
+            <div class="limit-bar">LIMITS: <span id="dispMin">--</span> to <span id="dispMax">--</span> mA</div>
         </div>
-
-        <div class="admin-controls">
-            <button class="adm-btn" onclick="openAdmin('storage')">📂 STORAGE</button>
-            <button class="adm-btn" onclick="openAdmin('config')">⚙️ CONFIG</button>
+        <div>
+            <button onclick="openAdmin('config')" style="padding:10px; background:#222; color:white; border:1px solid #444; cursor:pointer; border-radius:5px;">⚙️ CONFIG</button>
         </div>
     </div>
 
-    <!-- STARTUP SCREEN -->
     <div id="overlay">
-        <h1 style="color:#fff; margin-bottom:20px;">CALIFONIX PRODUCTION STATION</h1>
-        <button id="btnESP" class="setup-btn" style="background:#e67e22;" onclick="connectESP()">1. CONNECT CURRENT SENSOR (ESP32)</button>
-        <button id="btnBB" class="setup-btn" style="background:cyan; color: black; display:none;" onclick="connectBB()">2. CONNECT MAC BOX (BLUE BOX)</button>
-        <button id="btnPath" class="setup-btn" style="background:#2ecc71; display:none;" onclick="setupFolder()">3. SELECT LOGS FOLDER (MANAGER)</button>
+        <h1 style="color:#fff;">CALIFONIX PRODUCTION STATION</h1>
+        <button id="btnESP" class="setup-btn" style="background:#e67e22;" onclick="connectESP()">1. CONNECT CURRENT SENSOR</button>
+        <button id="btnBB" class="setup-btn" style="background:cyan; color: black; display:none;" onclick="connectBB()">2. CONNECT MAC BOX</button>
+        <button id="btnPath" class="setup-btn" style="background:#2ecc71; display:none;" onclick="setupFolder()">3. ACTIVATE LOCAL LOGGING</button>
+        <p id="pathStatus" style="color:#666; margin-top:10px;">Manager password required for Step 3.</p>
     </div>
 
     <div id="view">
@@ -74,23 +53,19 @@
     </div>
 
     <div class="stats">
-        <b>SHIFT PERFORMANCE</b><hr>
-        TOTAL: <span id="s-total" style="float:right;">0</span><br>
-        PASS: <span id="s-pass" style="color:#2ecc71; float:right;">0</span><br>
-        FAIL: <span id="s-fail" style="color:#ff4d4d; float:right;">0</span>
+        <b>PRODUCTION LOG</b><hr>
+        TOTAL: <span id="s-total">0</span> | PASS: <span id="s-pass" style="color:#2ecc71">0</span> | FAIL: <span id="s-fail" style="color:#ff4d4d">0</span>
     </div>
 
-    <div id="log-status"></div>
+    <div id="console" class="console">System Ready...<br></div>
 
-    <!-- CONFIG PANEL -->
     <div id="panelConfig" class="modal">
-        <h2 style="color: var(--accent); margin-top:0;">Configuration</h2>
-        <label>Model Name:</label><input id="in-model">
-        <label>Min mA Limit:</label><input id="in-min" type="number">
-        <label>Max mA Limit:</label><input id="in-max" type="number">
-        <label>Current Offset:</label><input id="in-offset" type="number">
-        <button onclick="saveAdmin()" style="width:100%; padding:15px; background:green; color:white; font-weight:bold; border:none; cursor:pointer;">SAVE & APPLY</button>
-        <button onclick="closeModals()" style="width:100%; padding:10px; margin-top:10px; background:#444; color:#fff; border:none; cursor:pointer;">Cancel</button>
+        <h2>Admin Settings</h2>
+        <label>Model Name:</label><input id="in-model" style="width:100%; padding:10px; margin-bottom:10px; background:#333; color:#fff; border:1px solid #555;">
+        <label>Min mA:</label><input id="in-min" type="number" style="width:100%; padding:10px; margin-bottom:10px; background:#333; color:#fff; border:1px solid #555;">
+        <label>Max mA:</label><input id="in-max" type="number" style="width:100%; padding:10px; margin-bottom:10px; background:#333; color:#fff; border:1px solid #555;">
+        <label>Offset:</label><input id="in-offset" type="number" style="width:100%; padding:10px; margin-bottom:10px; background:#333; color:#fff; border:1px solid #555;">
+        <button onclick="saveAdmin()" style="width:100%; padding:15px; background:green; color:white; font-weight:bold; border:none; cursor:pointer;">SAVE & LOCK</button>
     </div>
 
     <script>
@@ -99,25 +74,37 @@
         let counts = { total: 0, pass: 0, fail: 0 }, liveMA = 0, liveMAC = "--:--:--:--:--:--";
 
         window.onload = () => {
-            let saved = localStorage.getItem('cali_prod_final_v26');
+            let saved = localStorage.getItem('cali_vfinal_fix');
             if(saved) { cfg = JSON.parse(saved); updateUIHeader(); }
         };
 
         async function connectESP() {
-            try { espPort = await navigator.serial.requestPort(); await espPort.open({ baudRate: 115200 }); document.getElementById('btnBB').style.display = "block"; } catch (e) {}
+            try {
+                espPort = await navigator.serial.requestPort(); await espPort.open({ baudRate: 115200 });
+                document.getElementById('btnBB').style.display = "block";
+                print("ESP32 Connected.");
+            } catch (e) { print("ESP Error: " + e.message); }
         }
+
         async function connectBB() {
-            try { bbPort = await navigator.serial.requestPort(); await bbPort.open({ baudRate: 460800 }); document.getElementById('btnPath').style.display = "block"; } catch (e) {}
+            try {
+                bbPort = await navigator.serial.requestPort(); await bbPort.open({ baudRate: 460800 });
+                document.getElementById('btnPath').style.display = "block";
+                print("Blue Box Connected.");
+            } catch (e) { print("Blue Box Error: " + e.message); }
         }
+
         async function setupFolder() {
-            if(prompt("Manager Password:") === "admin789") {
-                try {
-                    dirHandle = await window.showDirectoryPicker();
+            if(prompt("Manager Password:") !== "admin789") return;
+            try {
+                dirHandle = await window.showDirectoryPicker();
+                // CRITICAL FIX: Request Read/Write permission explicitly
+                if ((await dirHandle.requestPermission({ mode: 'readwrite' })) === 'granted') {
                     document.getElementById('overlay').style.display = "none";
-                    document.getElementById('log-status').innerText = "LOGGING ACTIVE: " + dirHandle.name;
+                    print("Folder Ready: " + dirHandle.name);
                     readESP(); readBB();
-                } catch (e) { alert("Folder access failed!"); }
-            }
+                }
+            } catch (e) { print("Folder Error: " + e.message); }
         }
 
         async function readESP() {
@@ -132,11 +119,11 @@
                         if (text.includes("C|")) {
                             liveMA = parseFloat(text.split("|")[1]) - cfg.offset;
                             if (liveMA < 1) liveMA = 0;
-                            if (liveMA < 5.0 && (locked || testing)) resetUI();
                             if (!locked) {
                                 document.getElementById('current').innerText = liveMA.toFixed(1) + " mA";
                                 if (liveMA > 10.0 && !testing && liveMAC !== "--:--:--:--:--:--") startTest();
                             }
+                            if (liveMA < 5.0 && (locked || testing)) resetUI();
                         }
                     }
                 } finally { reader.releaseLock(); }
@@ -163,9 +150,10 @@
 
         function startTest() {
             testing = true;
-            document.getElementById('status').innerText = "TESTING...";
+            document.getElementById('status').innerText = "CAPTURING...";
+            // 1 SECOND HIGH SPEED CAPTURE
             setTimeout(async () => {
-                if(liveMA < 10.0) { testing = false; return; }
+                if (liveMA < 10.0) { testing = false; return; }
                 locked = true;
                 let finalVal = liveMA; let finalMac = liveMAC;
                 let status = (finalVal < cfg.min) ? "LOW mA" : (finalVal > cfg.max ? "HIGH mA" : "PASS");
@@ -176,28 +164,35 @@
                 
                 counts.total++; if(status === "PASS") counts.pass++; else counts.fail++;
                 updateStatsUI();
-                await saveToLogFile(cfg.model, finalMac, finalVal.toFixed(1), status);
-            }, 1200); 
+                await saveToFile(cfg.model, finalMac, finalVal.toFixed(1), status);
+            }, 1000); 
         }
 
-        async function saveToLogFile(mod, mac, cur, st) {
+        async function saveToFile(mod, mac, cur, st) {
             if (!dirHandle) return;
-            const fileName = `Log_${new Date().toISOString().split('T')[0]}.csv`;
-            const fileH = await dirHandle.getFileHandle(fileName, { create: true });
-            const file = await fileH.getFile();
-            let header = (file.size === 0) ? "Date,Time,Model,MAC,Current_mA,Status\n" : "";
-            const writable = await fileH.createWritable({keepExistingData: true});
-            const now = new Date();
-            const row = `${header}${now.toLocaleDateString()},${now.toLocaleTimeString()},${mod},${mac},${cur},${st}\n`;
-            await writable.write({ type: 'write', position: file.size, data: row });
-            await writable.close();
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const fileName = `Production_Log_${today}.csv`;
+                const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+                const writable = await fileHandle.createWritable({keepExistingData: true});
+                const file = await fileHandle.getFile();
+                
+                let header = (file.size === 0) ? "Date,Time,Model,MAC,mA,Status\n" : "";
+                const now = new Date();
+                const row = `${header}${now.toLocaleDateString()},${now.toLocaleTimeString()},${mod},${mac},${cur},${st}\n`;
+                
+                await writable.write({ type: 'write', position: file.size, data: row });
+                await writable.close(); // Forces physical save to drive
+                print("DATA SAVED: " + mac);
+            } catch (e) { print("SAVE ERROR: " + e.message); }
         }
 
         function resetUI() {
             testing = false; locked = false; liveMAC = "--:--:--:--:--:--";
             document.getElementById('ui-body').className = "";
-            document.getElementById('status').innerText = "READY";
+            document.getElementById('dispStatus').innerText = "READY";
             document.getElementById('current').innerText = "0.0 mA";
+            document.getElementById('mac').innerText = "--:--:--:--:--:--";
         }
 
         function updateStatsUI() {
@@ -206,29 +201,30 @@
             document.getElementById('s-fail').innerText = counts.fail;
         }
 
-        function openAdmin(type) {
-            let pass = prompt("Admin Password:");
-            if (type === 'config' && pass === "admin123") {
-                document.getElementById('in-model').value = cfg.model;
-                document.getElementById('in-min').value = cfg.min;
-                document.getElementById('in-max').value = cfg.max;
-                document.getElementById('in-offset').value = cfg.offset;
-                document.getElementById('panelConfig').style.display = "block";
-            } else if (type === 'storage' && pass === "admin789") {
-                location.reload(); 
-            }
+        function print(m) {
+            const c = document.getElementById('console');
+            c.innerHTML += `> ${m}<br>`;
+            c.scrollTop = c.scrollHeight;
         }
+
+        function openAdmin() { if(prompt("Password:") === "admin123") {
+            document.getElementById('in-model').value = cfg.model;
+            document.getElementById('in-min').value = cfg.min;
+            document.getElementById('in-max').value = cfg.max;
+            document.getElementById('in-offset').value = cfg.offset;
+            document.getElementById('panelConfig').style.display = "block";
+        }}
 
         function saveAdmin() {
             cfg.model = document.getElementById('in-model').value;
             cfg.min = parseFloat(document.getElementById('in-min').value);
             cfg.max = parseFloat(document.getElementById('in-max').value);
             cfg.offset = parseFloat(document.getElementById('in-offset').value);
-            localStorage.setItem('cali_prod_final_v26', JSON.stringify(cfg));
-            closeModals(); updateUIHeader();
+            localStorage.setItem('cali_v50', JSON.stringify(cfg));
+            document.getElementById('panelConfig').style.display = "none";
+            updateUIHeader();
         }
 
-        function closeModals() { document.getElementById('panelConfig').style.display = "none"; }
         function updateUIHeader() {
             document.getElementById('dispModel').innerText = "MODEL: " + cfg.model;
             document.getElementById('dispMin').innerText = cfg.min;
