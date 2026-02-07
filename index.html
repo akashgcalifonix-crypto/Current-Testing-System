@@ -1,154 +1,180 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Califonix | Industrial Pro Station</title>
+    <title>Califonix | Pro Production Station v2.0</title>
     <style>
         :root { 
-            --bg: #000000; --card: #080808; --accent: #00f2ff; 
+            --bg: #000000; --card: #0c0c0c; --accent: #00f2ff; 
             --pass: #00ff66; --fail: #ff0044; --low: #ffaa00; --text: #ffffff;
         }
         
         body { 
-            font-family: 'Segoe UI', sans-serif; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             background: var(--bg); color: var(--text); 
             margin: 0; overflow: hidden; height: 100vh;
             display: flex; flex-direction: column;
         }
 
-        /* FOREGROUND BLINK LAYER (Aage blink karne ke liye) */
         #blink-layer {
             position: fixed; inset: 0; z-index: 9999;
-            pointer-events: none; /* Taaki niche ke buttons kaam karein */
-            opacity: 0;
+            pointer-events: none; opacity: 0; transition: 0.2s;
         }
 
         .flash-green { animation: flash-g 0.6s infinite; }
         .flash-red { animation: flash-r 0.6s infinite; }
-        .flash-orange { animation: flash-o 0.6s infinite; }
 
-        @keyframes flash-g { 0%, 100% { opacity: 0; } 50% { opacity: 0.25; background: var(--pass); box-shadow: inset 0 0 100px var(--pass); } }
-        @keyframes flash-r { 0%, 100% { opacity: 0; } 50% { opacity: 0.25; background: var(--fail); box-shadow: inset 0 0 100px var(--fail); } }
-        @keyframes flash-o { 0%, 100% { opacity: 0; } 50% { opacity: 0.25; background: var(--low); box-shadow: inset 0 0 100px var(--low); } }
+        @keyframes flash-g { 50% { opacity: 0.2; background: var(--pass); } }
+        @keyframes flash-red { 50% { opacity: 0.2; background: var(--fail); } }
 
-        /* UI ELEMENTS */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 40px; background: #050505; border-bottom: 2px solid #111; }
-        .logo { height: 50px; filter: drop-shadow(0 0 10px var(--accent)); }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 30px; background: #080808; border-bottom: 1px solid #222; }
+        .logo { height: 40px; }
+
+        .main-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
         
-        .container { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; }
-        #model-display { font-size: 85px; font-weight: 900; color: #fff; text-transform: uppercase; margin: 0; letter-spacing: 2px; }
-        .range-box { font-size: 20px; color: var(--accent); border: 2px solid var(--accent); padding: 5px 35px; border-radius: 50px; background: rgba(0, 242, 255, 0.05); }
+        .model-header { text-align: center; margin-bottom: 30px; }
+        .model-name { font-size: 70px; font-weight: 900; margin: 0; letter-spacing: -2px; }
+        .limit-pill { background: rgba(0, 242, 255, 0.1); border: 1px solid var(--accent); color: var(--accent); padding: 5px 20px; border-radius: 50px; font-weight: bold; }
 
-        .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; width: 94%; max-width: 1400px; margin-top: 30px; }
-        .card { background: var(--card); border: 1px solid #151515; border-radius: 35px; padding: 50px 20px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,1); }
+        .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; width: 95%; max-width: 1400px; }
+        .card { background: var(--card); border: 1px solid #222; border-radius: 20px; padding: 40px 20px; text-align: center; position: relative; }
+        .card-label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; }
         
-        .label { font-size: 13px; color: #444; text-transform: uppercase; margin-bottom: 20px; font-weight: bold; letter-spacing: 2px; }
-        .val-mA { font-size: 115px; font-weight: bold; color: var(--accent); line-height: 1; }
-        .val-mac { font-size: 42px; font-family: monospace; color: #fff; text-shadow: 0 0 15px rgba(255,255,255,0.1); }
-        .val-status { font-size: 65px; font-weight: 900; text-transform: uppercase; }
+        .val-mA { font-size: 100px; font-weight: bold; color: var(--accent); }
+        .val-mac { font-size: 38px; font-family: 'Courier New', Courier, monospace; }
+        .val-status { font-size: 60px; font-weight: 900; }
 
-        .text-ready { color: #1a1a1a; }
-        .text-captured { color: var(--accent); animation: pulse 1s infinite; }
-        .text-pass { color: var(--pass); text-shadow: 0 0 20px rgba(0,255,102,0.3); }
-        .text-fail { color: var(--fail); text-shadow: 0 0 20px rgba(255,0,68,0.3); }
+        .status-ready { color: #333; }
+        .status-testing { color: var(--accent); animation: blink 1s infinite; }
+        .status-pass { color: var(--pass); }
+        .status-fail { color: var(--fail); }
+
+        @keyframes blink { 50% { opacity: 0.3; } }
+
+        .stats-footer { background: #050505; padding: 15px 40px; border-top: 1px solid #111; display: flex; justify-content: space-between; font-size: 18px; }
         
-        @keyframes pulse { 50% { opacity: 0.4; } }
+        /* OVERLAY SETUP */
+        #overlay { position: fixed; inset: 0; background: #000; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
+        .setup-btn { width: 400px; padding: 20px; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
 
-        .footer { background: #020202; padding: 20px 50px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #111; }
-        .stat-box { font-size: 22px; font-weight: bold; margin-right: 35px; }
+        /* DEBUG PANEL */
+        #debug-panel { height: 100px; background: #050505; border-top: 1px solid #222; padding: 10px; font-family: monospace; font-size: 11px; overflow-y: auto; color: #444; }
 
-        /* OVERLAY */
-        #overlay { position: fixed; inset: 0; background: #000; z-index: 10001; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .start-btn { padding: 25px 80px; font-size: 24px; font-weight: bold; border-radius: 15px; border: none; cursor: pointer; background: var(--accent); color: #000; box-shadow: 0 0 40px rgba(0,242,255,0.4); }
+        .modal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#111; padding:30px; border-radius:15px; border:1px solid #333; z-index: 11000; width: 350px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid #333; color: white; border-radius: 5px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
-    <!-- Blinking Layer (This blinks in FRONT) -->
     <div id="blink-layer"></div>
 
+    <!-- STARTUP DIALOG -->
     <div id="overlay">
-        <img src="https://i.postimg.cc/5y7SN4xc/logo.png" style="height: 100px; margin-bottom: 50px;">
-        <button class="start-btn" onclick="initStation()">START PRODUCTION</button>
+        <h1 style="margin-bottom: 30px;">STATION INITIALIZATION</h1>
+        <button id="btnESP" class="setup-btn" style="background: #e67e22;" onclick="connectESP()">1. CONNECT CURRENT SENSOR</button>
+        <button id="btnBB" class="setup-btn" style="background: #3498db; display:none;" onclick="connectBB()">2. CONNECT MAC BOX</button>
+        <button id="btnPath" class="setup-btn" style="background: #2ecc71; display:none;" onclick="setupFolder()">3. SELECT LOGS FOLDER</button>
     </div>
 
     <div class="header">
         <img src="https://i.postimg.cc/5y7SN4xc/logo.png" class="logo">
-        <div style="letter-spacing: 5px; color: #222; font-weight: bold; font-size: 14px;">CALIFONIX INDUSTRIAL STATION</div>
-        <button onclick="openConfig()" style="background:none; border:1px solid #222; color:#333; cursor:pointer; padding:8px 15px; border-radius:6px; font-size:12px;">SETTINGS</button>
+        <div style="font-weight: bold; color: #444;">CALIFONIX INDUSTRIAL PRO v2.0</div>
+        <button onclick="openConfig()" style="background:#222; border:none; color:white; padding:5px 15px; border-radius:5px; cursor:pointer;">CONFIG</button>
     </div>
 
-    <div class="container">
-        <h1 id="model-display">MODEL NAME</h1>
-        <div id="disp-limits" class="range-box">RANGE: -- - -- mA</div>
+    <div class="main-container">
+        <div class="model-header">
+            <h1 id="dispModel" class="model-name">--</h1>
+            <span id="dispLimits" class="limit-pill">RANGE: -- to -- mA</span>
+        </div>
 
         <div class="grid">
             <div class="card">
-                <div class="label">Step 1: Capture MAC</div>
+                <div class="card-label">Hardware MAC Address</div>
                 <div id="mac" class="val-mac">WAITING...</div>
-                <div id="mac-lock-status" style="margin-top:15px; font-size:12px; font-weight:bold; color:#222;">SEARCHING FOR DEVICE</div>
             </div>
-
-            <div class="card" style="border-top: 3px solid var(--accent);">
-                <div class="label">Step 2: Check Current</div>
-                <div id="dispCurrent" class="val-mA">0.0</div>
-                <div style="font-size: 14px; color: #222; font-weight: bold; margin-top:10px;">mA</div>
-            </div>
-
             <div class="card">
-                <div class="label">Process Status</div>
-                <div id="status" class="val-status text-ready">READY</div>
-                <div id="timer" style="color:#151515; font-family:monospace; margin-top:10px; font-weight:bold; font-size:18px;">T-0.0s</div>
+                <div class="card-label">Real-time Current (mA)</div>
+                <div id="dispCurrent" class="val-mA">0.0</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Process Status</div>
+                <div id="status" class="val-status status-ready">READY</div>
+                <div id="timer" style="margin-top:10px; font-family:monospace; color:#444;">0.0s</div>
             </div>
         </div>
     </div>
 
-    <div class="footer">
-        <div>
-            <span class="stat-box"><span style="color:#333; font-size:12px;">TOTAL</span> <span id="s-total">0</span></span>
-            <span class="stat-box" style="color:var(--pass);"><span style="color:#333; font-size:12px;">PASS</span> <span id="s-pass">0</span></span>
-            <span class="stat-box" style="color:var(--fail);"><span style="color:#333; font-size:12px;">FAIL</span> <span id="s-fail">0</span></span>
-        </div>
-        <div id="last-msg" style="color:#1a1a1a; font-family:monospace; font-size:12px; font-weight:bold;">STATION IDLE</div>
+    <div class="stats-footer">
+        <div>TOTAL: <span id="s-total">0</span></div>
+        <div style="color: var(--pass);">PASS: <span id="s-pass">0</span></div>
+        <div style="color: var(--fail);">FAIL: <span id="s-fail">0</span></div>
     </div>
+
+    <div id="debug-panel">--- SYSTEM LOGS ---<br></div>
 
     <!-- CONFIG MODAL -->
-    <div id="configModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#0a0a0a; padding:40px; border-radius:25px; width:330px; z-index:10002; border:1px solid #222; box-shadow: 0 0 100px #000;">
-        <h3 style="color:var(--accent); margin-top:0;">Configuration</h3>
-        <label style="color:#444; font-size:10px;">MODEL NAME</label><input id="in-model" style="width:100%; padding:10px; background:#000; border:1px solid #222; color:#fff; margin-bottom:15px;">
-        <label style="color:#444; font-size:10px;">MIN mA</label><input id="in-min" type="number" style="width:100%; padding:10px; background:#000; border:1px solid #222; color:#fff; margin-bottom:15px;">
-        <label style="color:#444; font-size:10px;">MAX mA</label><input id="in-max" type="number" style="width:100%; padding:10px; background:#000; border:1px solid #222; color:#fff; margin-bottom:15px;">
-        <label style="color:#444; font-size:10px;">ZERO OFFSET</label><input id="in-offset" type="number" style="width:100%; padding:10px; background:#000; border:1px solid #222; color:#fff; margin-bottom:15px;">
-        <label style="color:#444; font-size:10px;">CAL FACTOR</label><input id="in-cal" type="number" step="0.001" style="width:100%; padding:10px; background:#000; border:1px solid #222; color:#fff; margin-bottom:20px;">
-        <button onclick="saveConfig()" style="width:100%; padding:18px; background:var(--accent); border:none; font-weight:bold; cursor:pointer; border-radius:12px;">SAVE SETTINGS</button>
+    <div id="configModal" class="modal">
+        <h3 style="color:var(--accent)">Station Config</h3>
+        <label>Model Name</label><input id="in-model">
+        <label>Min mA</label><input id="in-min" type="number">
+        <label>Max mA</label><input id="in-max" type="number">
+        <label>Zero Offset</label><input id="in-offset" type="number">
+        <label>Cal Multiplier</label><input id="in-cal" type="number" step="0.001">
+        <button onclick="saveConfig()" style="width:100%; padding:15px; background:var(--pass); border:none; border-radius:5px; font-weight:bold; cursor:pointer;">SAVE SETTINGS</button>
     </div>
 
     <script>
-        let espPort, bbPort, dirHandle, locked = false, testing = false;
-        let cfg = { model: "Boat TWS", min: 30, max: 80, offset: 128.0, cal: 0.814 };
-        let counts = { total: 0, pass: 0, fail: 0 }, liveMA = 0;
-        let capturedMAC = null;
+        let espPort, bbPort, dirHandle;
+        let locked = false, testing = false, capturedMAC = null;
         let startTime, timerInterval;
+        
+        // Defaults if LocalStorage is empty
+        let cfg = { model: "Boat 161", min: 30, max: 80, offset: 0.0, cal: 1.0 };
+        let counts = { total: 0, pass: 0, fail: 0 };
 
         window.onload = () => {
-            let saved = localStorage.getItem('cali_master_v60');
-            if(saved) { cfg = JSON.parse(saved); updateUI(); }
+            let saved = localStorage.getItem('cali_v2_cfg');
+            if(saved) cfg = JSON.parse(saved);
+            updateUIStrings();
         };
 
-        navigator.serial.addEventListener('disconnect', () => { 
-            alert("🚨 PORT DISCONNECTED!\nCheck USB cables and Refresh page."); 
-            location.reload(); 
-        });
+        function log(msg) {
+            const dp = document.getElementById('debug-panel');
+            dp.innerHTML += `> ${msg}<br>`;
+            dp.scrollTop = dp.scrollHeight;
+        }
 
-        async function initStation() {
+        async function connectESP() {
             try {
-                if(!espPort) { espPort = await navigator.serial.requestPort(); await espPort.open({ baudRate: 115200 }); }
-                if(!bbPort) { bbPort = await navigator.serial.requestPort(); await bbPort.open({ baudRate: 460800 }); }
+                espPort = await navigator.serial.requestPort();
+                await espPort.open({ baudRate: 115200 });
+                document.getElementById('btnBB').style.display = "block";
+                log("Current Sensor Connected.");
+            } catch (e) { log("Error connecting Sensor: " + e); }
+        }
+
+        async function connectBB() {
+            try {
+                bbPort = await navigator.serial.requestPort();
+                await bbPort.open({ baudRate: 460800 });
+                document.getElementById('btnPath').style.display = "block";
+                log("MAC Box Connected.");
+            } catch (e) { log("Error connecting MAC Box: " + e); }
+        }
+
+        async function setupFolder() {
+            try {
                 dirHandle = await window.showDirectoryPicker();
                 document.getElementById('overlay').style.display = "none";
-                readESP(); readBB();
-            } catch (e) { alert("Ports or Folder missing."); }
+                log("Log folder selected. System Ready.");
+                startReading();
+            } catch (e) { log("Folder access denied."); }
+        }
+
+        function startReading() {
+            readESP();
+            readBB();
         }
 
         async function readESP() {
@@ -162,117 +188,127 @@
                         let text = decoder.decode(value);
                         if (text.includes("C|")) {
                             let raw = parseFloat(text.split("|")[1]);
-                            liveMA = (raw - cfg.offset) * cfg.cal;
+                            let liveMA = (raw - cfg.offset) * cfg.cal;
                             if (liveMA < 2) liveMA = 0;
-                            if (liveMA < 5.0 && locked) resetUI();
 
+                            // Display
                             if (!locked) {
                                 document.getElementById('dispCurrent').innerText = liveMA.toFixed(1);
-                                if (capturedMAC && liveMA > 10.0 && !testing) startTest();
+                                if (liveMA > 10.0 && capturedMAC && !testing) {
+                                    startTest(liveMA);
+                                }
+                            }
+
+                            // Auto Reset
+                            if (liveMA < 5.0 && (locked || testing)) {
+                                resetUI();
                             }
                         }
                     }
-                } finally { reader.releaseLock(); }
+                } catch (e) { log("ESP Stream Error: " + e); }
+                finally { reader.releaseLock(); }
             }
         }
 
         async function readBB() {
-            const reader = bbPort.readable.getReader(); let buffer = [];
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                value.forEach(b => buffer.push(b));
-                while (buffer.length >= 8) {
-                    let idx = buffer.indexOf(0x06);
-                    if (idx !== -1 && buffer[idx+1] === 0x01 && buffer.length >= idx + 8) {
-                        let macFound = buffer.slice(idx+2, idx+8).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(":");
-                        if (!capturedMAC && !locked) {
-                            capturedMAC = macFound;
-                            document.getElementById('mac').innerText = capturedMAC;
-                            document.getElementById('mac').style.color = "#00f2ff";
-                            document.getElementById('mac-lock-status').innerText = "MAC LOCKED - CONNECT PIECE";
-                            document.getElementById('mac-lock-status').style.color = "#00ff66";
-                            document.getElementById('status').innerText = "READY FOR PIECE";
-                            document.getElementById('status').className = "val-status text-captured";
-                        }
-                        buffer.splice(0, idx + 8);
-                    } else if (idx === -1) { buffer = []; break; }
-                    else { buffer.shift(); }
+            const reader = bbPort.readable.getReader();
+            let buffer = [];
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    value.forEach(b => buffer.push(b));
+                    while (buffer.length >= 8) {
+                        let idx = buffer.indexOf(0x06);
+                        if (idx !== -1 && buffer[idx+1] === 0x01 && buffer.length >= idx + 8) {
+                            let mac = buffer.slice(idx+2, idx+8).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(":");
+                            if(!locked && !testing) {
+                                capturedMAC = mac;
+                                document.getElementById('mac').innerText = mac;
+                                document.getElementById('mac').style.color = "var(--accent)";
+                                log("MAC Captured: " + mac);
+                            }
+                            buffer.splice(0, idx + 8);
+                        } else if (idx === -1) { buffer = []; break; }
+                        else { buffer.shift(); }
+                    }
                 }
-            }
+            } catch (e) { log("MAC Box Error: " + e); }
+            finally { reader.releaseLock(); }
         }
 
-        function startTest() {
+        function startTest(val) {
             testing = true;
             startTime = Date.now();
-            document.getElementById('status').innerText = "TESTING...";
-            document.getElementById('status').className = "val-status text-pass";
+            document.getElementById('status').innerText = "TESTING";
+            document.getElementById('status').className = "val-status status-testing";
+            
             timerInterval = setInterval(() => {
                 let elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-                document.getElementById('timer').innerText = `T-${elapsed}s`;
-                if (elapsed >= 2.0) finalize();
+                document.getElementById('timer').innerText = elapsed + "s";
+                if (elapsed >= 2.0) {
+                    clearInterval(timerInterval);
+                    finalizeResult();
+                }
             }, 100);
         }
 
-        async function finalize() {
+        async function finalizeResult() {
             if (locked) return;
-            clearInterval(timerInterval);
-            locked = true; testing = false;
-            
-            const finalVal = liveMA;
-            let status = "PASS", flashClass = "flash-green", statusClass = "text-pass";
+            locked = true;
+            let finalMA = parseFloat(document.getElementById('dispCurrent').innerText);
+            let result = "PASS";
+            let classStyle = "status-pass";
 
-            if (finalVal < cfg.min) { 
-                status = "LOW mA"; flashClass = "flash-orange"; statusClass = "text-low"; 
-            } else if (finalVal > cfg.max) { 
-                status = "HIGH mA"; flashClass = "flash-red"; statusClass = "text-fail"; 
-            }
+            if (finalMA < cfg.min) { result = "LOW mA"; classStyle = "status-fail"; }
+            else if (finalMA > cfg.max) { result = "HIGH mA"; classStyle = "status-fail"; }
 
-            // UI UPDATES
-            document.getElementById('status').innerText = status;
-            document.getElementById('status').className = "val-status " + statusClass;
-            document.getElementById('blink-layer').className = flashClass; // Start foreground flash
+            document.getElementById('status').innerText = result;
+            document.getElementById('status').className = "val-status " + classStyle;
+            document.getElementById('blink-layer').className = (result === "PASS") ? "flash-green" : "flash-red";
 
-            if(status === "PASS") counts.pass++; else counts.fail++;
             counts.total++;
-            updateStats();
-            await saveLog(cfg.model, capturedMAC, finalVal.toFixed(1), status);
-            document.getElementById('last-msg').innerText = `LOGGED: ${capturedMAC}`;
+            if (result === "PASS") counts.pass++; else counts.fail++;
+            updateStatsUI();
+            
+            await saveToCSV(cfg.model, capturedMAC, finalMA, result);
         }
 
-        async function saveLog(mod, mac, cur, st) {
+        async function saveToCSV(mod, mac, ma, st) {
             if (!dirHandle) return;
             try {
-                const fileName = `Log_${new Date().toISOString().split('T')[0]}.csv`;
-                const fileH = await dirHandle.getFileHandle(fileName, { create: true });
-                const writable = await fileH.createWritable({keepExistingData: true});
-                const file = await fileH.getFile();
-                let header = (file.size === 0) ? "Date,Time,Model,MAC,mA,Status\n" : "";
-                const now = new Date();
-                const row = `${header}${now.toLocaleDateString()},${now.toLocaleTimeString()},${mod},${mac},${cur},${st}\n`;
+                const date = new Date().toISOString().split('T')[0];
+                const fileHandle = await dirHandle.getFileHandle(`Log_${date}.csv`, { create: true });
+                const writable = await fileHandle.createWritable({ keepExistingData: true });
+                const file = await fileHandle.getFile();
+                let header = (file.size === 0) ? "Date,Time,Model,MAC,Current_mA,Status\n" : "";
+                const row = `${header}${new Date().toLocaleDateString()},${new Date().toLocaleTimeString()},${mod},${mac},${ma},${st}\n`;
                 await writable.write({ type: 'write', position: file.size, data: row });
                 await writable.close();
-            } catch(e) {}
+                log("Log saved for " + mac);
+            } catch (e) { log("CSV Error: " + e); }
         }
 
         function resetUI() {
             clearInterval(timerInterval);
-            testing = false; locked = false; capturedMAC = null;
-            document.getElementById('blink-layer').className = ""; // Remove flash
+            locked = false; testing = false; capturedMAC = null;
             document.getElementById('status').innerText = "READY";
-            document.getElementById('status').className = "val-status text-ready";
-            document.getElementById('dispCurrent').innerText = "0.0";
+            document.getElementById('status').className = "val-status status-ready";
             document.getElementById('mac').innerText = "WAITING...";
-            document.getElementById('mac').style.color = "#fff";
-            document.getElementById('mac-lock-status').innerText = "SEARCHING FOR DEVICE";
-            document.getElementById('mac-lock-status').style.color = "#222";
-            document.getElementById('timer').innerText = "T-0.0s";
+            document.getElementById('mac').style.color = "white";
+            document.getElementById('timer').innerText = "0.0s";
+            document.getElementById('blink-layer').className = "";
         }
 
-        function updateStats() {
+        function updateStatsUI() {
             document.getElementById('s-total').innerText = counts.total;
             document.getElementById('s-pass').innerText = counts.pass;
             document.getElementById('s-fail').innerText = counts.fail;
+        }
+
+        function updateUIStrings() {
+            document.getElementById('dispModel').innerText = cfg.model;
+            document.getElementById('dispLimits').innerText = `RANGE: ${cfg.min} to ${cfg.max} mA`;
         }
 
         function openConfig() {
@@ -290,14 +326,16 @@
             cfg.max = parseFloat(document.getElementById('in-max').value);
             cfg.offset = parseFloat(document.getElementById('in-offset').value);
             cfg.cal = parseFloat(document.getElementById('in-cal').value);
-            localStorage.setItem('cali_master_v60', JSON.stringify(cfg));
-            location.reload();
+            localStorage.setItem('cali_v2_cfg', JSON.stringify(cfg));
+            document.getElementById('configModal').style.display = "none";
+            updateUIStrings();
+            log("Settings updated.");
         }
 
-        function updateUI() {
-            document.getElementById('model-display').innerText = cfg.model;
-            document.getElementById('disp-limits').innerText = `RANGE: ${cfg.min} - ${cfg.max} mA`;
-        }
+        navigator.serial.addEventListener('disconnect', () => {
+            alert("Hardware Disconnected! Please check USB cable and refresh.");
+            location.reload();
+        });
     </script>
 </body>
 </html>
